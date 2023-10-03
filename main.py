@@ -1,6 +1,6 @@
-from os import path
-from helpers.filesystem import get_folder_name_from_url
 from helpers.constants import DOWNLOAD_BUTTON_ID, DOWNLOAD_LINK_ID, MAX_THREADS
+from helpers.filesystem import get_filename_from_url, create_destiny_folder
+from helpers.fireload import get_fireload_urls
 from selenium.webdriver.edge.service import Service as EdgeService
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
 from selenium import webdriver
@@ -13,6 +13,7 @@ def download_fireload_urls(driver, urls, folder_destiny):
     items_in_process = []
     items_errors = []
     items_success = []
+
     def get_index_by_url(url):
         for index, item in enumerate(items_in_process):
             if item['url'] == url:
@@ -90,10 +91,7 @@ def download_fireload_urls(driver, urls, folder_destiny):
 if __name__ == "__main__":
     cola = []
     folder_url = "https://www.fireload.com/folder/8a3b80912c40659961540d91060d91d0/501-600"
-    folder_destiny = path.abspath(".\downloads")
-    if not path.exists(folder_destiny):
-        path.mkdir(folder_destiny)
-
+    folder_destiny = create_destiny_folder(folder_url)
     options = webdriver.EdgeOptions()
     options.add_argument('log-level=3')
     options.add_experimental_option("prefs", {
@@ -102,7 +100,7 @@ if __name__ == "__main__":
         "download.directory_upgrade": True,
         "safebrowsing.enabled": True
     })
-    # options.add_argument('--headless')
+    # # options.add_argument('--headless')
     service = EdgeService(EdgeChromiumDriverManager().install())
     driver = webdriver.Edge(service=service, options=options)
     urls = get_fireload_urls(folder_url)
