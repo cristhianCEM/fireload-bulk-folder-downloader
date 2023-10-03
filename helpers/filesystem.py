@@ -2,7 +2,7 @@ from re import sub as re_sub
 from random import choices as random_choices
 from urllib.parse import urlparse
 from string import ascii_letters, digits
-from os import path
+import os
 
 # Función para obtener y formatear el nombre de la carpeta de la URL
 # o generar uno aleatorio si es invalido o Nulo
@@ -26,13 +26,15 @@ def get_filename_from_url(file_url):
 # Función para crear la carpeta de destino
 # estilo  C:\Users\Usuario\Downloads\folder_68ac0cd3a5f200b6
 def create_destiny_folder(folder_url):
-    root_folder = path.abspath(".\downloads")
-    if not path.exists(root_folder):
-        path.mkdir(root_folder)
+    root_folder = os.path.abspath(".\downloads")
+    if not os.path.exists(root_folder):
+        os.mkdir(root_folder)
     folder = get_folder_from_url(folder_url)
-    folder_destiny = path.join(root_folder, folder)
+    folder_destiny = os.path.join(root_folder, folder)
+    if not os.path.exists(folder_destiny):
+        os.mkdir(folder_destiny)
     return folder_destiny
 
 # Función para verificar si el archivo existe en la carpeta de destino
 def exists_file(filename, folder):
-    return path.exists(path.join(folder, filename))
+    return os.path.exists(os.path.join(folder, filename))
