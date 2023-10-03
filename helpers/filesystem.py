@@ -36,5 +36,5 @@ def create_destiny_folder(folder_url):
     return folder_destiny
 
 # Función para verificar si el archivo existe en la carpeta de destino
-def exists_file(filename, folder):
+def exists_file(folder, filename):
     return os.path.exists(os.path.join(folder, filename))
