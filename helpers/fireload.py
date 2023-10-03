@@ -31,7 +31,7 @@ def get_fireload_urls(folder_url):
             continue
         url = link['href']
         urls.append(url)
-    return urls
+    return urls.reverse()
 
 # Funcion que descarga los archivos de fireload
 # el parametro driver es el driver de selenium
