@@ -49,19 +49,32 @@ def download_fireload_urls(driver, urls, folder_destiny):
     def window_open(driver, url):
         driver.execute_script(f"window.open('{url}');")
 
-    def get_download_url(driver):
+    def click_valid_download_link(driver):
         try:
             download_link = WebDriverWait(driver, 5).until(
                 EC.visibility_of_element_located((By.ID, DOWNLOAD_LINK_ID)))
-            return download_link.get_attribute('href')
+            href_value = download_link.get_attribute('href')
+            if href_value and href_value != 'javascript:void(0)':
+                download_link.click()
+                print(f"Iniciando descarga: {href_value}")
+                return href_value
+            else:
+                print('El enlace de descarga no es válido')
+                return False
         except:
-            print('No se pudo obtener el link de descarga')
+            print('No se pudo hacer click en el link de descarga')
             return False
 
     def exist_file_downloaded(filename):
         return exists_file(folder_destiny, filename)
 
+    def add_item_to_remove(index, success=True):
+        items_to_remove.append(index)
+        items_in_process[index]['success'] = success
+
+    default_window = driver.current_window_handle
     while urls or items_in_process:
+        driver.switch_to.window(default_window)
         # add news item to process
         if len(items_in_process) < MAX_THREADS:
             for _ in range(MAX_THREADS - len(items_in_process)):
@@ -85,6 +98,7 @@ def download_fireload_urls(driver, urls, folder_destiny):
             if item['window_handle'] is None:
                 for window_handle in windows:
                     driver.switch_to.window(window_handle)
+                    sleep(0.5)
                     if driver.current_url == item['url']:
                         item['window_handle'] = window_handle
         # search and map for download button
@@ -92,27 +106,31 @@ def download_fireload_urls(driver, urls, folder_destiny):
             if item['window_handle'] is None:
                 print("No se encontró la ventana: " + item['url'])
                 continue
-            driver.switch_to.window(item['window_handle'])
-            wait_seconds(1)
             if item['download'] == 'not-started':
+                wait_seconds(1)
                 if item['seconds'] < 5:
                     continue
-                download_url = get_download_url(driver)
-                if download_url == 'javascript:void(0)' or download_url == False:
+                if exist_file_downloaded(item['filename']):
+                    print("El archivo ya existe: " + item['filename'])
+                    add_item_to_remove(index, True)
+                    continue
+                driver.switch_to.window(item['window_handle'])
+                download_url = click_valid_download_link(driver)
+                if download_url == False:
                     if item['seconds'] > 10:
                         print("No se pudo obtener el link de descarga: " + item['url'])
-                        items_in_process[index]['success'] = False
-                        items_to_remove.append(index)
+                        add_item_to_remove(index, False)
                 else:
-                    print("Iniciando descarga: " + download_url)
-                    window_open(driver, download_url)
-                    items_in_process[index]['download_url'] = download_url
                     items_in_process[index]['download'] = 'started'
-            elif exist_file_downloaded(item['filename']):
-                print("Se descargó el archivo: " + item['filename'])
-                items_in_process[index]['success'] = True
-                items_to_remove.append(index)
+                    wait_seconds(2)
+            else:
+                if exist_file_downloaded(item['filename']):
+                    print(f"Se descargó el archivo: {item['filename']}")
+                    add_item_to_remove(index, True)
+                else:
+                    print('.', end='', flush=True)
         # remove items
+        print("\nRemoviendo items")
         for index in reversed(items_to_remove):
             item_deleted = items_in_process.pop(index)
             items_ending.append(item_deleted)
