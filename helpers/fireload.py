@@ -106,8 +106,8 @@ def download_fireload_urls(driver, urls, folder_destiny):
             if item['window_handle'] is None:
                 print("No se encontró la ventana: " + item['url'])
                 continue
+            wait_seconds(1)
             if item['download'] == 'not-started':
-                wait_seconds(1)
                 if item['seconds'] < 5:
                     continue
                 if exist_file_downloaded(item['filename']):
@@ -122,7 +122,8 @@ def download_fireload_urls(driver, urls, folder_destiny):
                         add_item_to_remove(index, False)
                 else:
                     items_in_process[index]['download'] = 'started'
-                    wait_seconds(2)
+                    wait_seconds(5)
+                    print("Esperando 5 segundos")
             else:
                 if exist_file_downloaded(item['filename']):
                     print(f"Se descargó el archivo: {item['filename']}")
