@@ -1,4 +1,4 @@
-from helpers.constants import TABLE_ID, DOWNLOAD_LINK_ID, MAX_THREADS
+from helpers.constants import TABLE_ID, DOWNLOAD_LINK_ID, DOWNLOAD_BUTTON_ID, MAX_THREADS
 from helpers.filesystem import get_filename_from_url, exists_file
 from bs4 import BeautifulSoup
 import requests
@@ -51,11 +51,13 @@ def download_fireload_urls(driver, urls, folder_destiny):
 
     def click_valid_download_link(driver):
         try:
+            download_button = WebDriverWait(driver, 5).until(
+                EC.visibility_of_element_located((By.ID, DOWNLOAD_BUTTON_ID)))
             download_link = WebDriverWait(driver, 5).until(
                 EC.visibility_of_element_located((By.ID, DOWNLOAD_LINK_ID)))
             href_value = download_link.get_attribute('href')
             if href_value and href_value != 'javascript:void(0)':
-                download_link.click()
+                download_button.click()
                 print(f"Iniciando descarga: {href_value}")
                 return href_value
             else:
