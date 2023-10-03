@@ -1,4 +1,5 @@
 import requests
+from os import path
 from constants import TABLE_ID, DOWNLOAD_BUTTON_ID, DOWNLOAD_LINK_ID
 from multiprocessing import Process, Queue
 from selenium.webdriver.edge.service import Service as EdgeService
@@ -11,7 +12,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 import time
 from bs4 import BeautifulSoup
-
 
 def get_fireload_urls(folder_url):
     response = requests.get(folder_url)
@@ -37,8 +37,8 @@ def get_fireload_urls(folder_url):
         urls.append(url)
     return urls
 
-def get_download_urls(driver, folder_url, threads=10):
-    urls = get_fireload_urls(folder_url)
+def download_urls(driver, folder_url, threads=5):
+    urls = get_fireload_urls(folder_url)[:10]
     items_in_process = []
     items_errors = []
     items_success = []
@@ -53,6 +53,9 @@ def get_download_urls(driver, folder_url, threads=10):
         for item in items_in_process:
             item['seconds'] += seconds
 
+    def window_open(driver, url):
+        driver.execute_script(f"window.open('{url}');")
+
     while (True):
         len_items_in_process = len(items_in_process)
         if len(urls) == 0 and len_items_in_process == 0:
@@ -66,14 +69,13 @@ def get_download_urls(driver, folder_url, threads=10):
                     'url': url,
                     'seconds': 0
                 })
-                driver.execute_script(f"window.open('{url}');")
+                window_open(driver, url)
                 print("se agrego a la cola: " + url)
         for window_handle in driver.window_handles[1:]:
             driver.switch_to.window(window_handle)
             current_url = driver.current_url
             index = get_index_by_url(current_url)
             if index is None:
-                print("No se encontró el item en la cola: " + current_url)
                 driver.close()
                 continue
             item = items_in_process[index]
@@ -105,6 +107,7 @@ def get_download_urls(driver, folder_url, threads=10):
                 print("Link de descarga obtenido: " + download_url)
                 items_success.append(current_item)
                 items_in_process.pop(index)
+                window_open(driver, download_url)
             wait_seconds(1)
     string = input("¿Desea cerrar el script? (y/n): ")
     if string == 'y':
@@ -123,7 +126,6 @@ def descargar_archivo(url, nombre_archivo):
             archivo.write(chunk)
     progreso.close()
 
-
 def descargar_archivos(cola):
     while not cola.empty():
         url = cola.get()
@@ -131,18 +133,23 @@ def descargar_archivos(cola):
         descargar_archivo(url, nombre_archivo)
 
 if __name__ == "__main__":
-    # cola = Queue()
     cola = []
     folder_url = "https://www.fireload.com/folder/8a3b80912c40659961540d91060d91d0/501-600"
-
+    folder_destiny = path.abspath(".\downloads")
     options = webdriver.EdgeOptions()
     options.add_argument('log-level=3')
-    options.add_argument('--headless')
+    options.add_experimental_option("prefs", {
+        "download.default_directory": folder_destiny,
+        "download.prompt_for_download": False,
+        "download.directory_upgrade": True,
+        "safebrowsing.enabled": True
+    })
+    # options.add_argument('--headless')
     service = EdgeService(EdgeChromiumDriverManager().install())
-    service.log_path = "NUL"
-    service.command_line_args().append("--log-level=3")
+    # service.log_path = "NUL"
+    # service.command_line_args().append("--log-level=3")
     driver = webdriver.Edge(service=service, options=options)
-    get_download_urls(driver, folder_url)
+    download_urls(driver, folder_url)
     # proceso_obtener = Process(target=obtener_urls, args=(cola, folder_url))
     # proceso_descargar = Process(target=descargar_archivos, args=(cola,))
     # proceso_obtener.start()
