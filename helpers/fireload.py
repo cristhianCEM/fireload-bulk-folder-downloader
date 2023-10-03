@@ -92,33 +92,34 @@ def download_fireload_urls(driver, urls, folder_destiny):
             if item['window_handle'] is None:
                 print("No se encontró la ventana: " + item['url'])
                 continue
+            driver.switch_to.window(item['window_handle'])
+            wait_seconds(1)
             if item['download'] == 'not-started':
-                driver.switch_to.window(item['window_handle'])
-                wait_seconds(1)
                 if item['seconds'] < 5:
                     continue
                 download_url = get_download_url(driver)
                 if download_url == 'javascript:void(0)' or download_url == False:
                     if item['seconds'] > 10:
                         print("No se pudo obtener el link de descarga: " + item['url'])
-                        item_deleted = items_in_process.pop(index)
-                        item_deleted['success'] = False
-                        items_ending.append(item_deleted)
-                        driver.close()
+                        items_in_process[index]['success'] = False
+                        items_to_remove.append(index)
                 else:
                     print("Iniciando descarga: " + download_url)
                     window_open(driver, download_url)
-                    item['download_url'] = download_url
-                    item['download'] = 'started'
-            else:
-                driver.switch_to.window(item['window_handle'])
-                wait_seconds(1)
-                if exist_file_downloaded(item['filename']):
-                    print("Se descargó el archivo: " + item['filename'])
-                    item_deleted = items_in_process.pop(index)
-                    item_deleted['success'] = True
-                    items_ending.append(item_deleted)
-                    driver.close()
+                    items_in_process[index]['download_url'] = download_url
+                    items_in_process[index]['download'] = 'started'
+            elif exist_file_downloaded(item['filename']):
+                print("Se descargó el archivo: " + item['filename'])
+                items_in_process[index]['success'] = True
+                items_to_remove.append(index)
+        # remove items
+        for index in reversed(items_to_remove):
+            item_deleted = items_in_process.pop(index)
+            items_ending.append(item_deleted)
+            driver.switch_to.window(item_deleted['window_handle'])
+            sleep(1)
+            driver.close()
+        items_to_remove.clear()
     string = input("¿Desea cerrar el script? (y/n): ")
     if string == 'y':
         driver.quit()
