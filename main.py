@@ -1,6 +1,6 @@
-import requests
 from os import path
-from constants import TABLE_ID, DOWNLOAD_BUTTON_ID, DOWNLOAD_LINK_ID
+from helpers.filesystem import get_folder_name_from_url
+from helpers.constants import DOWNLOAD_BUTTON_ID, DOWNLOAD_LINK_ID, MAX_THREADS
 from selenium.webdriver.edge.service import Service as EdgeService
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
 from selenium import webdriver
@@ -8,34 +8,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 import time
-from bs4 import BeautifulSoup
 
-def get_fireload_urls(folder_url):
-    response = requests.get(folder_url)
-    if response.status_code != 200:
-        raise Exception(
-            f'Error: Unable to retrieve page with status code {response.status_code}')
-    soup = BeautifulSoup(response.text, 'html.parser')
-    table = soup.find(id=TABLE_ID)
-    if table is None:
-        raise Exception('Error: Unable to find table with id ' + TABLE_ID)
-    rows = table.find_all('tr')
-    urls = []
-    for row in rows:
-        columns = row.find_all('td')
-        if len(columns) == 0:
-            continue
-        key_column = columns[1]
-        link = key_column.find('a')
-        if link is None:
-            print('Not found page link')
-            continue
-        url = link['href']
-        urls.append(url)
-    return urls
-
-def download_urls(driver, folder_url, threads=5):
-    urls = get_fireload_urls(folder_url)[:10]
+def download_fireload_urls(driver, urls, folder_destiny):
     items_in_process = []
     items_errors = []
     items_success = []
@@ -57,14 +31,15 @@ def download_urls(driver, folder_url, threads=5):
         len_items_in_process = len(items_in_process)
         if len(urls) == 0 and len_items_in_process == 0:
             break
-        if len_items_in_process < threads:
-            for _ in range(threads - len_items_in_process):
+        if len_items_in_process < MAX_THREADS:
+            for _ in range(MAX_THREADS - len_items_in_process):
                 if len(urls) == 0:
                     break
                 url = urls.pop()
                 items_in_process.append({
                     'url': url,
-                    'seconds': 0
+                    'seconds': 0,
+                    'filename': None
                 })
                 window_open(driver, url)
                 print("se agrego a la cola: " + url)
@@ -116,6 +91,9 @@ if __name__ == "__main__":
     cola = []
     folder_url = "https://www.fireload.com/folder/8a3b80912c40659961540d91060d91d0/501-600"
     folder_destiny = path.abspath(".\downloads")
+    if not path.exists(folder_destiny):
+        path.mkdir(folder_destiny)
+
     options = webdriver.EdgeOptions()
     options.add_argument('log-level=3')
     options.add_experimental_option("prefs", {
@@ -127,4 +105,5 @@ if __name__ == "__main__":
     # options.add_argument('--headless')
     service = EdgeService(EdgeChromiumDriverManager().install())
     driver = webdriver.Edge(service=service, options=options)
-    download_urls(driver, folder_url)
+    urls = get_fireload_urls(folder_url)
+    download_fireload_urls(driver, urls)
