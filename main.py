@@ -2,6 +2,7 @@ import requests
 from constants import TABLE_ID, DOWNLOAD_BUTTON_ID, DOWNLOAD_LINK_ID
 from multiprocessing import Process, Queue
 from selenium.webdriver.edge.service import Service as EdgeService
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
 from tqdm import tqdm
 from selenium import webdriver
@@ -11,10 +12,12 @@ from selenium.webdriver.support import expected_conditions as EC
 import time
 from bs4 import BeautifulSoup
 
+
 def get_fireload_urls(folder_url):
     response = requests.get(folder_url)
     if response.status_code != 200:
-        raise Exception(f'Error: Unable to retrieve page with status code {response.status_code}')
+        raise Exception(
+            f'Error: Unable to retrieve page with status code {response.status_code}')
     soup = BeautifulSoup(response.text, 'html.parser')
     table = soup.find(id=TABLE_ID)
     if table is None:
@@ -34,40 +37,92 @@ def get_fireload_urls(folder_url):
         urls.append(url)
     return urls
 
-def get_download_urls(folder_url):
-    driver = webdriver.Edge(service=EdgeService(EdgeChromiumDriverManager().install()))
-    fireload_urls = get_fireload_urls(folder_url)
-    for url in fireload_urls:
-        print("Intentando obtener link de descarga de: " + url)
-        driver.get(url)
-        # wait for the download button to appear
-        WebDriverWait(driver, 10).until(lambda d: d.find_element(By.ID, DOWNLOAD_BUTTON_ID))
-        download_button = driver.find_element(By.ID, DOWNLOAD_BUTTON_ID)
-        if download_button is None:
-            print('No se encontró el botón de descarga')
-            continue
-        for _ in range(8):
-            time.sleep(1)
-            download_link = download_button.find_element(By.ID, DOWNLOAD_LINK_ID)
-            if download_link is not None:
-                break
-        if download_link is None:
-            print('No se encontró el link de descarga')
-            continue
-        # get download link
-        download_url = download_link.get_attribute('href')
-        print(download_url)
-    driver.quit()
+def get_download_urls(driver, folder_url, threads=10):
+    urls = get_fireload_urls(folder_url)
+    items_in_process = []
+    items_errors = []
+    items_success = []
+    def get_index_by_url(url):
+        for index, item in enumerate(items_in_process):
+            if item['url'] == url:
+                return index
+        return None
+
+    def wait_seconds(seconds=1):
+        time.sleep(seconds)
+        for item in items_in_process:
+            item['seconds'] += seconds
+
+    while (True):
+        len_items_in_process = len(items_in_process)
+        if len(urls) == 0 and len_items_in_process == 0:
+            break
+        if len_items_in_process < threads:
+            for _ in range(threads - len_items_in_process):
+                if len(urls) == 0:
+                    break
+                url = urls.pop()
+                items_in_process.append({
+                    'url': url,
+                    'seconds': 0
+                })
+                driver.execute_script(f"window.open('{url}');")
+                print("se agrego a la cola: " + url)
+        for window_handle in driver.window_handles[1:]:
+            driver.switch_to.window(window_handle)
+            current_url = driver.current_url
+            index = get_index_by_url(current_url)
+            if index is None:
+                print("No se encontró el item en la cola: " + current_url)
+                driver.close()
+                continue
+            item = items_in_process[index]
+            if item['seconds'] < 5:
+                wait_seconds(1)
+                continue
+            download_button = WebDriverWait(driver, 5).until(
+                EC.visibility_of_element_located((By.ID, DOWNLOAD_BUTTON_ID)))
+            if download_button is None:
+                print('No se encontró el botón de descarga')
+                continue
+            download_link = WebDriverWait(driver, 5).until(
+                EC.visibility_of_element_located((By.ID, DOWNLOAD_LINK_ID)))
+            if download_link is None:
+                print('No se encontró el link de descarga')
+                continue
+            download_url = download_link.get_attribute('href')
+            current_item = {
+                'url': current_url,
+                'download_url': download_url
+            }
+            if download_url == 'javascript:void(0)':
+                if item['seconds'] > 10:
+                    items_errors.append(current_item)
+                    items_in_process.pop(index)
+                    print("No se pudo obtener el link de descarga: " + current_url)
+                    driver.close()
+            else:
+                print("Link de descarga obtenido: " + download_url)
+                items_success.append(current_item)
+                items_in_process.pop(index)
+            wait_seconds(1)
+    string = input("¿Desea cerrar el script? (y/n): ")
+    if string == 'y':
+        driver.quit()
+        print("El navegador se cerró")
+    print("El navegador no se cerrará")
 
 def descargar_archivo(url, nombre_archivo):
     respuesta = requests.get(url, stream=True)
     tamaño_total = int(respuesta.headers.get('content-length', 0))
-    progreso = tqdm(total=tamaño_total, unit='iB', unit_scale=True, desc=nombre_archivo)
+    progreso = tqdm(total=tamaño_total, unit='iB',
+                    unit_scale=True, desc=nombre_archivo)
     with open(nombre_archivo, 'wb') as archivo:
         for chunk in respuesta.iter_content(chunk_size=8192):
             progreso.update(len(chunk))
             archivo.write(chunk)
     progreso.close()
+
 
 def descargar_archivos(cola):
     while not cola.empty():
@@ -79,7 +134,15 @@ if __name__ == "__main__":
     # cola = Queue()
     cola = []
     folder_url = "https://www.fireload.com/folder/8a3b80912c40659961540d91060d91d0/501-600"
-    get_download_urls(folder_url)
+
+    options = webdriver.EdgeOptions()
+    options.add_argument('log-level=3')
+    options.add_argument('--headless')
+    service = EdgeService(EdgeChromiumDriverManager().install())
+    service.log_path = "NUL"
+    service.command_line_args().append("--log-level=3")
+    driver = webdriver.Edge(service=service, options=options)
+    get_download_urls(driver, folder_url)
     # proceso_obtener = Process(target=obtener_urls, args=(cola, folder_url))
     # proceso_descargar = Process(target=descargar_archivos, args=(cola,))
     # proceso_obtener.start()
