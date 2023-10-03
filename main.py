@@ -40,7 +40,7 @@ def download_fireload_urls(driver, urls, folder_destiny):
                 items_in_process.append({
                     'url': url,
                     'seconds': 0,
-                    'filename': None
+                    'filename': get_filename_from_url(url)
                 })
                 window_open(driver, url)
                 print("se agrego a la cola: " + url)
@@ -89,9 +89,9 @@ def download_fireload_urls(driver, urls, folder_destiny):
     print("El navegador no se cerrará")
 
 if __name__ == "__main__":
-    cola = []
     folder_url = "https://www.fireload.com/folder/8a3b80912c40659961540d91060d91d0/501-600"
     folder_destiny = create_destiny_folder(folder_url)
+    print("Carpeta de destino: " + folder_destiny)
     options = webdriver.EdgeOptions()
     options.add_argument('log-level=3')
     options.add_experimental_option("prefs", {
@@ -100,8 +100,8 @@ if __name__ == "__main__":
         "download.directory_upgrade": True,
         "safebrowsing.enabled": True
     })
-    # # options.add_argument('--headless')
+    # options.add_argument('--headless')
     service = EdgeService(EdgeChromiumDriverManager().install())
     driver = webdriver.Edge(service=service, options=options)
     urls = get_fireload_urls(folder_url)
-    download_fireload_urls(driver, urls)
+    download_fireload_urls(driver, urls, folder_destiny)
