@@ -74,9 +74,9 @@ def download_fireload_urls(driver, urls, folder_destiny):
 
     default_window = driver.current_window_handle
     while urls or items_in_process:
-        driver.switch_to.window(default_window)
         # add news item to process
         if len(items_in_process) < MAX_THREADS:
+            driver.switch_to.window(default_window)
             for _ in range(MAX_THREADS - len(items_in_process)):
                 if len(urls) == 0:
                     break
