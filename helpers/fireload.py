@@ -31,7 +31,7 @@ def get_fireload_urls(folder_url):
             continue
         url = link['href']
         urls.append(url)
-    return urls.reverse()
+    return urls
 
 # Funcion que descarga los archivos de fireload
 # el parametro driver es el driver de selenium
@@ -132,8 +132,7 @@ def download_fireload_urls(driver, urls, folder_destiny):
                     add_item_to_remove(index, True)
                 else:
                     print('.', end='', flush=True)
-        # remove items
-        print("\nRemoviendo items")
+        # remove items already downloaded
         for index in reversed(items_to_remove):
             item_deleted = items_in_process.pop(index)
             items_ending.append(item_deleted)
