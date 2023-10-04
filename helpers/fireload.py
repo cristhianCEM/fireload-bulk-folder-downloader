@@ -75,6 +75,7 @@ def download_fireload_urls(driver, urls, folder_destiny):
         items_in_process[index]['success'] = success
 
     default_window = driver.current_window_handle
+    tabs_windows = []
     while urls or items_in_process:
         # add news item to process
         if len(items_in_process) < MAX_THREADS:
@@ -100,14 +101,16 @@ def download_fireload_urls(driver, urls, folder_destiny):
             if item['window_handle'] is None:
                 for window_handle in windows:
                     driver.switch_to.window(window_handle)
-                    sleep(0.5)
+                    sleep(1)
                     if driver.current_url == item['url']:
                         item['window_handle'] = window_handle
+                        tabs_windows.append(window_handle)
         # search and map for download button
         for index, item in enumerate(items_in_process):
             if item['window_handle'] is None:
                 print("No se encontró la ventana: " + item['url'])
                 continue
+            driver.switch_to.window(item['window_handle'])
             wait_seconds(1)
             if item['download'] == 'not-started':
                 if item['seconds'] < 5:
@@ -116,7 +119,6 @@ def download_fireload_urls(driver, urls, folder_destiny):
                     print("El archivo ya existe: " + item['filename'])
                     add_item_to_remove(index, True)
                     continue
-                driver.switch_to.window(item['window_handle'])
                 download_url = click_valid_download_link(driver)
                 if download_url == False:
                     if item['seconds'] > 10:
@@ -124,22 +126,25 @@ def download_fireload_urls(driver, urls, folder_destiny):
                         add_item_to_remove(index, False)
                 else:
                     items_in_process[index]['download'] = 'started'
-                    wait_seconds(5)
-                    print("Esperando 5 segundos")
             else:
                 if exist_file_downloaded(item['filename']):
                     print(f"Se descargó el archivo: {item['filename']}")
                     add_item_to_remove(index, True)
                 else:
+                    # click_valid_download_link(driver)
                     print('.', end='', flush=True)
         # remove items already downloaded
         for index in reversed(items_to_remove):
             item_deleted = items_in_process.pop(index)
             items_ending.append(item_deleted)
-            driver.switch_to.window(item_deleted['window_handle'])
-            sleep(1)
-            driver.close()
+            tabs_windows.remove(item_deleted['window_handle'])
         items_to_remove.clear()
+        # close tabs windows that no is in process
+        for window_index in windows:
+            if window_index not in tabs_windows:
+                driver.switch_to.window(window_index)
+                sleep(1)
+                driver.close()
     string = input("¿Desea cerrar el script? (y/n): ")
     if string == 'y':
         driver.quit()
