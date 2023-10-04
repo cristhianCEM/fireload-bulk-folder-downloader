@@ -9,7 +9,7 @@ from time import sleep
 
 # Funcion que obtiene los links de descarga de fireload
 # el parametro folder_url es la url de la carpeta de fireload
-def get_fireload_urls(folder_url):
+def get_fireload_table_data(folder_url):
     response = requests.get(folder_url)
     if response.status_code != 200:
         raise Exception(
@@ -19,7 +19,7 @@ def get_fireload_urls(folder_url):
     if table is None:
         raise Exception('Error: Unable to find table with id ' + TABLE_ID)
     rows = table.find_all('tr')
-    urls = []
+    table_data = []
     for row in rows:
         columns = row.find_all('td')
         if len(columns) == 0:
@@ -30,8 +30,12 @@ def get_fireload_urls(folder_url):
             print('Not found page link')
             continue
         url = link['href']
-        urls.append(url)
-    return urls
+        filename = link.text
+        table_data.append({
+            'url': url,
+            'filename': filename
+        })
+    return table_data
 
 # Funcion que descarga los archivos de fireload
 # el parametro driver es el driver de selenium
