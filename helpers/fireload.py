@@ -131,7 +131,7 @@ def download_fireload_urls(driver, urls, folder_destiny):
                     print(f"Se descargó el archivo: {item['filename']}")
                     add_item_to_remove(index, True)
                 else:
-                    # click_valid_download_link(driver)
+                    click_valid_download_link(driver)
                     print('.', end='', flush=True)
         # remove items already downloaded
         for index in reversed(items_to_remove):
