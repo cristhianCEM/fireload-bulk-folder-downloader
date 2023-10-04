@@ -39,7 +39,7 @@ def get_fireload_table_data(folder_url):
 
 # Funcion que descarga los archivos de fireload
 # el parametro driver es el driver de selenium
-def download_fireload_urls(driver, urls, folder_destiny):
+def download_fireload_table(driver, table_data, folder_destiny):
 
     items_in_process = []
     items_to_remove = []
@@ -82,19 +82,21 @@ def download_fireload_urls(driver, urls, folder_destiny):
 
     default_window = driver.current_window_handle
     tabs_windows = []
-    while urls or items_in_process:
+    while table_data or items_in_process:
         # add news item to process
         if len(items_in_process) < MAX_THREADS:
             driver.switch_to.window(default_window)
             for _ in range(MAX_THREADS - len(items_in_process)):
-                if len(urls) == 0:
+                if len(table_data) == 0:
                     break
-                url = urls.pop()
+                table_item = table_data.pop()
+                url = table_item['url']
+                filename = table_item['filename']
                 items_in_process.append({
                     'url': url,
                     'window_handle': None,
                     'seconds': 0,
-                    'filename': get_filename_from_url(url),
+                    'filename': filename,
                     'download': 'not-started',
                     'success': None
                 })
@@ -107,7 +109,7 @@ def download_fireload_urls(driver, urls, folder_destiny):
             if item['window_handle'] is None:
                 for window_handle in windows:
                     driver.switch_to.window(window_handle)
-                    sleep(1)
+                    sleep(0.5)
                     if driver.current_url == item['url']:
                         item['window_handle'] = window_handle
                         tabs_windows.append(window_handle)
