@@ -12,9 +12,12 @@ pip install -r requirements.txt
 ## Usage
 Update the config.py file with the URL of the Fireload folder you wish to download files from.
 
+change fireload url in main, change folder_url in main.py
+if you want to change number of downloads, change constant MAX_THREADS in helpers/constants.py
+
 Run the script:
 ```bash
-python main.py -p <number of processes> -url <Fireload folder URL>
+python main.py
 ```
 
 This will start the Selenium browser, navigate to the specified Fireload folder, gather the download links, and download the files concurrently using multiple processes.
