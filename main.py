@@ -20,4 +20,4 @@ if __name__ == "__main__":
     service = EdgeService(EdgeChromiumDriverManager().install())
     driver = webdriver.Edge(service=service, options=options)
     urls = get_fireload_urls(folder_url)
-    download_fireload_urls(driver, urls, folder_destiny)
+    download_fireload_urls(driver, urls[::-1], folder_destiny)
