@@ -2,6 +2,10 @@
 
 downloads/*
 
+# archivos de extensiones instaladas en selenium
+crx/*
+!crx/*.zip
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
