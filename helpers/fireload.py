@@ -49,7 +49,7 @@ def download_fireload_urls(driver, urls, folder_destiny):
     def window_open(driver, url):
         driver.execute_script(f"window.open('{url}');")
 
-    def click_valid_download_link(driver):
+    def click_valid_download_link(driver, show_error=False):
         try:
             download_button = WebDriverWait(driver, 5).until(
                 EC.visibility_of_element_located((By.ID, DOWNLOAD_BUTTON_ID)))
@@ -61,10 +61,12 @@ def download_fireload_urls(driver, urls, folder_destiny):
                 print(f"Iniciando descarga: {href_value}")
                 return href_value
             else:
-                print('El enlace de descarga no es válido')
+                if show_error:
+                    print('El enlace de descarga no es válido')
                 return False
         except:
-            print('No se pudo hacer click en el link de descarga')
+            if show_error:
+                print('No se pudo hacer click en el link de descarga')
             return False
 
     def exist_file_downloaded(filename):
@@ -119,7 +121,7 @@ def download_fireload_urls(driver, urls, folder_destiny):
                     print("El archivo ya existe: " + item['filename'])
                     add_item_to_remove(index, True)
                     continue
-                download_url = click_valid_download_link(driver)
+                download_url = click_valid_download_link(driver, True)
                 if download_url == False:
                     if item['seconds'] > 10:
                         print("No se pudo obtener el link de descarga: " + item['url'])
@@ -149,4 +151,5 @@ def download_fireload_urls(driver, urls, folder_destiny):
     if string == 'y':
         driver.quit()
         print("El navegador se cerró")
-    print("El navegador no se cerrará")
+    else:
+        print("El navegador no se cerrará")
