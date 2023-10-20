@@ -1,6 +1,6 @@
 import os
 from time import sleep
-from helpers.filesystem import create_destiny_folder
+from helpers.filesystem import create_destiny_folder_by_url
 from helpers.fireload import get_fireload_table_data, download_fireload_table
 from selenium.webdriver.edge.service import Service as EdgeService
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
@@ -9,7 +9,7 @@ from selenium import webdriver
 if __name__ == "__main__":
     path_extension = os.path.abspath("./crx/addblock-5.10.1-edge")
     folder_url = "https://www.fireload.com/folder/614e42be954d90fc160ea99786baac8e/401-500"
-    folder_destiny = create_destiny_folder(folder_url)
+    folder_destiny = create_destiny_folder_by_url(folder_url)
     print("Carpeta de destino: " + folder_destiny)
     options = webdriver.EdgeOptions()
     options.add_argument('log-level=3')
