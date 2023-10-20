@@ -7,6 +7,19 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from time import sleep
 
+def get_fireload_table_from_file(filename):
+    with open(filename, 'r') as file:
+        lines = file.readlines()
+    rows = []
+    for line in lines:
+        if line.startswith('https://www.fireload.com/'):
+            url = line.strip()
+            rows.append({
+                'url': url,
+                'filename': get_filename_from_url(url)
+            })
+    return rows
+
 # Funcion que obtiene los links de descarga de fireload
 # el parametro folder_url es la url de la carpeta de fireload
 def get_fireload_table_data(folder_url):
