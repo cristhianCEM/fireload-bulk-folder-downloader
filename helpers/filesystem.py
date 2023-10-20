@@ -17,22 +17,31 @@ def get_folder_from_url(folder_url):
     return formatted_folder_name
 
 # Función para obtener el nombre del archivo de la URL
-# estilo  https://www.fireload.com/68ac0cd3a5f200b6/OP-503.zip?pt=WVZOTlN6azNWV1pCZUhkUFNVTTBkMjlqTW5oNVp6MDlPcDlSZnVDdnlGUUJrc2JkVG9WTUtuZz0%3D
+# example: https://www.fireload.com/XXXXXXXXXXXXXXXX/ok.zip?pt=WVZOTlN6azNWV1pCZUh3434667833434H6455HkVG9WTUtuZz0%3D
 def get_filename_from_url(file_url):
     parsed_url = urlparse(file_url)
     path_parts = parsed_url.path.strip("/").split("/")
     return path_parts[-1] if path_parts else None
 
-# Función para crear la carpeta de destino
-# estilo  C:\Users\Usuario\Downloads\folder_68ac0cd3a5f200b6
-def create_destiny_folder(folder_url):
+# Función auxiliar para crear carpetas
+def create_folder_if_not_exists(path):
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+# Función para crear la carpeta de destino basandose en la URL
+# param: folder_url: URL de la carpeta
+# example: C:\Users\Usuario\Downloads\folder_68ac0cd3a5f200b6
+def create_destiny_folder_by_url(folder_url: str):
+    folder_name = get_folder_from_url(folder_url)
+    return create_destiny_folder(folder_name)
+
+# Funcion para crear la carpeta de destino basandose un nombre
+# param: folder_name: Nombre de la carpeta
+def create_destiny_folder(folder_name: str):
     root_folder = os.path.abspath(".\downloads")
-    if not os.path.exists(root_folder):
-        os.mkdir(root_folder)
-    folder = get_folder_from_url(folder_url)
-    folder_destiny = os.path.join(root_folder, folder)
-    if not os.path.exists(folder_destiny):
-        os.mkdir(folder_destiny)
+    create_folder_if_not_exists(root_folder)
+    folder_destiny = os.path.join(root_folder, folder_name)
+    create_folder_if_not_exists(folder_destiny)
     return folder_destiny
 
 # Función para verificar si el archivo existe en la carpeta de destino
