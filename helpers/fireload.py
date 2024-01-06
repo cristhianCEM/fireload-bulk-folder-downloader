@@ -7,6 +7,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from time import sleep
 
+
 def get_fireload_table_from_file(filename):
     with open(filename, 'r') as file:
         lines = file.readlines()
@@ -22,6 +23,8 @@ def get_fireload_table_from_file(filename):
 
 # Funcion que obtiene los links de descarga de fireload
 # el parametro folder_url es la url de la carpeta de fireload
+
+
 def get_fireload_table_data(folder_url):
     response = requests.get(folder_url)
     if response.status_code != 200:
@@ -52,6 +55,8 @@ def get_fireload_table_data(folder_url):
 
 # Funcion que descarga los archivos de fireload
 # el parametro driver es el driver de selenium
+
+
 def download_fireload_table(driver, table_data, folder_destiny):
 
     items_in_process = []
@@ -163,9 +168,13 @@ def download_fireload_table(driver, table_data, folder_destiny):
         # close tabs windows that no is in process
         for window_index in windows:
             if window_index not in tabs_windows:
-                driver.switch_to.window(window_index)
-                sleep(1)
-                driver.close()
+                try:
+                    driver.switch_to.window(window_index)
+                    sleep(1)
+                    driver.close()
+                except Exception as e:
+                    print(f"Se intentó cerrar una ventana pero no se pudo({window_index})")
+                    pass
     string = input("¿Desea cerrar el script? (y/n): ")
     if string == 'y':
         driver.quit()
